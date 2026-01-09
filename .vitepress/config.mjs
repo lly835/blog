@@ -4,20 +4,23 @@ export default defineConfig({
   title: 'AI 技术博客',
   description: '从 B站视频自动生成的技术博客',
   lang: 'zh-CN',
-  base: '/blog/',
+  base: '/',
   ignoreDeadLinks: true,
   
   head: [
-    ['link', { rel: 'icon', href: '/blog/favicon.ico' }]
+    ['link', { rel: 'icon', href: '/favicon.ico' }]
   ],
+
+  sitemap: {
+    hostname: 'https://lly835.github.io'
+  },
 
   themeConfig: {
     logo: '/logo.svg',
     
     nav: [
       { text: '首页', link: '/' },
-      { text: '博客', link: '/posts/' },
-      { text: 'GitHub', link: 'https://github.com/lly835/blog' }
+      { text: 'GitHub', link: 'https://github.com/lly835/lly835.github.io' }
     ],
 
     sidebar: {
@@ -30,7 +33,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/lly835/blog' }
+      { icon: 'github', link: 'https://github.com/lly835/lly835.github.io' }
     ],
 
     footer: {
@@ -39,7 +42,10 @@ export default defineConfig({
     },
 
     search: {
-      provider: 'local'
+      provider: 'local',
+      options: {
+        detailedView: true
+      }
     },
 
     outline: {
