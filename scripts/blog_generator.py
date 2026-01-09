@@ -74,6 +74,7 @@ class BlogGenerator:
             raise ValueError(f"API 返回格式异常: {data}")
         
         content = data["choices"][0]["message"]["content"]
+        content = self._clean_thinking_tags(content)
         
         tags = self._extract_tags(video_title, video_description)
         
@@ -136,6 +137,10 @@ class BlogGenerator:
                 tags.append(keyword)
         
         return tags[:5]
+    
+    def _clean_thinking_tags(self, content: str) -> str:
+        cleaned = re.sub(r'<think>.*?</think>\s*', '', content, flags=re.DOTALL)
+        return cleaned.strip()
 
 
 def format_blog_markdown(
