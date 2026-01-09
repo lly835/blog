@@ -81,6 +81,7 @@ def generate_blog(
         description = video_info.description
         content = video_info.subtitle_content
         duration = format_duration(video_info.duration)
+        source_type = "B站视频"
         
         print(f"视频标题: {title}")
         print(f"UP主: {author}")
@@ -95,6 +96,7 @@ def generate_blog(
         description = article_info.description or "无简介"
         content = article_info.content
         duration = "阅读"
+        source_type = "文章"
         
         print(f"文章标题: {title}")
         print(f"作者: {author}")
