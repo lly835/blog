@@ -10,11 +10,12 @@ layout: doc
 
 <script setup>
 import { data } from './posts.data.mjs'
+import { withBase } from 'vitepress'
 </script>
 
 <div class="posts-list">
   <div v-for="post in data" :key="post.url" class="post-item">
-    <h3><a :href="post.url">{{ post.title }}</a></h3>
+    <h3><a :href="withBase(post.url)">{{ post.title }}</a></h3>
     <p class="post-meta">
       <span>📅 {{ post.date }}</span>
       <span v-if="post.author"> · 👤 {{ post.author }}</span>
