@@ -7,25 +7,22 @@ from dataclasses import dataclass
 MINIMAX_API_URL = "https://api.minimaxi.com/v1/chat/completions"
 MINIMAX_MODEL = "MiniMax-M2.1"
 
-SYSTEM_PROMPT = """你是一位专业的技术博客作者。你的任务是根据提供的素材（视频字幕或文章内容）撰写一篇高质量的技术博客/笔记。
+SYSTEM_PROMPT = """你是一位专业的技术博客作者。你的任务是根据提供的素材（视频字幕或文章内容）撰写一篇**精炼简洁**的技术博客/笔记。
+
+⚠️ 核心要求：文章总字数控制在 800-1500 字以内，重点在于提炼精华，而非全面覆盖。
 
 写作要求：
-1. 使用 Markdown 格式
-2. 包含清晰的标题结构（使用 ## 和 ### 等）
-3. 提炼核心观点和技术要点
+1. 使用 Markdown 格式，结构清晰（## 和 ### 标题）
+2. 只保留最核心的 3-5 个要点，舍弃次要内容
+3. 每个要点用 2-3 句话概括，避免冗余展开
 4. 保持专业、客观的语气
-5. 适当添加个人见解和思考
-6. 如果是教程，整理出关键步骤
-7. 如果有代码示例，使用代码块格式化
-
-博客结构建议：
-- 开头简要介绍主题和来源
-- 主体部分按逻辑组织内容要点
-- 结尾可以添加总结或个人思考
+5. 如有代码示例，只保留关键片段
+6. 结尾一句话总结即可，不需要大段感想
 
 注意：
-- 不要生成文章的一级标题（# 标题），因为会由系统自动添加
-- 直接从正文内容开始"""
+- 不要生成一级标题（# 标题），系统会自动添加
+- 直接从正文内容开始
+- 宁可精简，不要啰嗦"""
 
 @dataclass
 class BlogContent:
@@ -102,7 +99,7 @@ class BlogGenerator:
         ]
         
         if content:
-            truncated = content[:12000] if len(content) > 12000 else content
+            truncated = content[:6000] if len(content) > 6000 else content
             parts.extend([
                 "",
                 "## 内容详情",
