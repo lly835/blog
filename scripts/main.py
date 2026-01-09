@@ -7,30 +7,41 @@ import argparse
 import requests
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 
 from bilibili import BilibiliClient, format_duration
 from blog_generator import BlogGenerator, format_blog_markdown
 
 
+from content_extractor import ContentExtractor
+
 POSTS_DIR = Path(__file__).parent.parent / "posts"
 
 
-def extract_bilibili_url(text: str) -> str | None:
+def extract_url(text: str) -> Optional[str]:
     patterns = [
         r'https?://(?:www\.)?bilibili\.com/video/(BV[a-zA-Z0-9]+)',
         r'https?://b23\.tv/([a-zA-Z0-9]+)',
         r'(BV[a-zA-Z0-9]+)',
+        r'https?://mp\.weixin\.qq\.com/s/[\w-]+',
+        r'https?://mp\.weixin\.qq\.com/s\?__biz=[\w=&-]+',
+        r'https?://[^\s]+'
     ]
     
     for pattern in patterns:
         match = re.search(pattern, text)
         if match:
-            bvid = match.group(1)
-            if bvid.startswith("BV"):
-                return f"https://www.bilibili.com/video/{bvid}"
-            return f"https://b23.tv/{bvid}"
+            url = match.group(0)
+            if "bilibili.com" in url or "b23.tv" in url or url.startswith("BV"):
+                 if url.startswith("BV"):
+                     return f"https://www.bilibili.com/video/{url}"
+                 return url
+            return url
     
     return None
+
+def is_bilibili_url(url: str) -> bool:
+    return "bilibili.com" in url or "b23.tv" in url
 
 
 def slugify(text: str, max_length: int = 50) -> str:
@@ -42,8 +53,8 @@ def slugify(text: str, max_length: int = 50) -> str:
 
 def generate_blog(
     message: str,
-    bilibili_sessdata: str | None = None,
-    minimax_api_key: str | None = None
+    bilibili_sessdata: Optional[str] = None,
+    minimax_api_key: Optional[str] = None
 ) -> dict:
     minimax_api_key = minimax_api_key or os.environ.get("MINIMAX_API_KEY")
     if not minimax_api_key:
@@ -51,9 +62,9 @@ def generate_blog(
     
     bilibili_sessdata = bilibili_sessdata or os.environ.get("BILIBILI_SESSDATA")
     
-    video_url = extract_bilibili_url(message)
+    video_url = extract_url(message)
     if not video_url:
-        raise ValueError(f"未找到有效的 B站链接: {message}")
+        raise ValueError(f"未找到有效的链接: {message}")
     
     user_note = re.sub(
         r'https?://[^\s]+',
@@ -61,31 +72,51 @@ def generate_blog(
         message
     ).strip()
     
-    bili_client = BilibiliClient(sessdata=bilibili_sessdata)
-    video_info = bili_client.get_full_video_info(video_url)
-    
-    print(f"视频标题: {video_info.title}")
-    print(f"UP主: {video_info.author}")
-    print(f"字幕: {'有' if video_info.subtitle_content else '无'}")
+    if is_bilibili_url(video_url):
+        bili_client = BilibiliClient(sessdata=bilibili_sessdata)
+        video_info = bili_client.get_full_video_info(video_url)
+        
+        title = video_info.title
+        author = video_info.author
+        description = video_info.description
+        content = video_info.subtitle_content
+        duration = format_duration(video_info.duration)
+        
+        print(f"视频标题: {title}")
+        print(f"UP主: {author}")
+        print(f"字幕: {'有' if content else '无'}")
+        
+    else:
+        extractor = ContentExtractor()
+        article_info = extractor.extract(video_url)
+        
+        title = article_info.title
+        author = article_info.author
+        description = article_info.description or "无简介"
+        content = article_info.content
+        duration = "阅读"
+        
+        print(f"文章标题: {title}")
+        print(f"作者: {author}")
     
     generator = BlogGenerator(minimax_api_key)
     blog = generator.generate(
-        video_title=video_info.title,
-        video_author=video_info.author,
-        video_description=video_info.description,
+        video_title=title,
+        video_author=author,
+        video_description=description,
         user_note=user_note,
-        subtitle_content=video_info.subtitle_content
+        subtitle_content=content
     )
     
     markdown_content = format_blog_markdown(
         blog=blog,
         video_url=video_url,
-        video_author=video_info.author,
-        video_duration=format_duration(video_info.duration)
+        video_author=author,
+        video_duration=duration
     )
     
     date_str = datetime.now().strftime("%Y-%m-%d")
-    slug = slugify(video_info.title)
+    slug = slugify(title)
     filename = f"{date_str}-{slug}.md"
     filepath = POSTS_DIR / filename
     
@@ -97,17 +128,18 @@ def generate_blog(
     return {
         "filepath": str(filepath),
         "filename": filename,
-        "title": video_info.title,
+        "title": title,
         "tags": blog.tags,
-        "url": video_url
+        "url": video_url,
+        "source_type": source_type
     }
 
 
-def notify_dingtalk(webhook_url: str | None, result: dict) -> None:
+def notify_dingtalk(webhook_url: Optional[str], result: dict) -> None:
     if not webhook_url:
         print("未配置钉钉通知 Webhook，跳过通知")
         return
-    
+
     github_repo = os.environ.get("GITHUB_REPOSITORY", "lly835/blog")
     file_url = f"https://github.com/{github_repo}/blob/main/{result['filepath']}"
     
@@ -123,7 +155,7 @@ def notify_dingtalk(webhook_url: str | None, result: dict) -> None:
 
 **标签**: {', '.join(result['tags']) if result['tags'] else '无'}
 
-**来源**: [B站视频]({result['url']})
+**来源**: [{result.get('source_type', '来源')}]({result['url']})
 """
         }
     }
