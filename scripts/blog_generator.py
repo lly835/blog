@@ -4,8 +4,8 @@ import requests
 from typing import Optional
 from dataclasses import dataclass
 
-MINIMAX_API_URL = "https://api.minimax.io/v1/chat/completions"
-MINIMAX_MODEL = "MiniMax-M1"
+MINIMAX_API_URL = "https://api.minimaxi.com/v1/chat/completions"
+MINIMAX_MODEL = "MiniMax-M2.1"
 
 SYSTEM_PROMPT = """你是一位专业的技术博客作者。你的任务是根据视频内容撰写一篇高质量的技术博客/笔记。
 
